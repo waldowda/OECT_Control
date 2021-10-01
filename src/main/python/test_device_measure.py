@@ -22,7 +22,9 @@ class TestDeviceMeasure(GeneralCurveMeasure):
     #class variable determining numbering of measurement output file. useful in auto_measure for multiple transfers and outputs
     READ_NUMBER = 1
     
-    COM = 'COM6' # USB relay
+    # Two Relays
+    COM_A = 'COM6' # USB relay A - for source
+    COM_B = 'COM3' # USB relay B - for drain
 
     def switch_setting(self):
         '''
@@ -118,17 +120,35 @@ class TestDeviceMeasure(GeneralCurveMeasure):
         self.ds_plot.setLabel('bottom', 'V_G')
         self.g_plot.setLabel('bottom', 'V_G')
         
-        # Open the correct Relay port
+        # Suggested modification, Dean Waldow, 20211001
+        # Use 2 8-channel relay boards instead of one.
+        #
+        # Open the correct Relay port A
         # The command is always b'\xFF\x00' and then the last byte is related to the port
         # 1=port 1, 2 =port 2, 4=port 3, 8 = port 4, etc
         try:
-            self.serial_device = serial.Serial(self.COM)
+            self.serial_device_a = serial.Serial(self.COM_A)
             cmd = bytearray(b'')
             cmd.append(255)
             cmd.append(0)
             cmd.append(self.pixels[self.settings['pixel']])
             print(cmd)
-            self.serial_device.write(cmd)
+            self.serial_device_a.write(cmd)
+        except:
+            print('Using manual mode, not USB relay')
+           
+        # Open the correct Relay port B
+        # The command is always b'\xFF\x00' and then the last byte is related to the port
+        # 1=port 1, 2 =port 2, 4=port 3, 8 = port 4, etc
+        try:
+            self.serial_device_b = serial.Serial(self.COM_B)
+            # DW SHould not need to redo cmd
+            #cmd = bytearray(b'')
+            #cmd.append(255)
+            #cmd.append(0)
+            #cmd.append(self.pixels[self.settings['pixel']])
+            print(cmd)
+            self.serial_device_b.write(cmd)
         except:
             print('Using manual mode, not USB relay')
         
@@ -174,13 +194,27 @@ class TestDeviceMeasure(GeneralCurveMeasure):
         self.READ_NUMBER = 1
         self.make_config()
 
+        # Close section for relays A and B
+        # Close relay A
         try:
             cmd = bytearray(b'')
             cmd.append(255)
             cmd.append(0)
             cmd.append(0)
-            self.serial_device.write(cmd)
-            self.serial_device.close()
+            self.serial_device_a.write(cmd)
+            self.serial_device_a.close()
+        except:
+            pass
+
+        # Close relay B
+        try:
+            # DW: don't think I need to redo cmd.
+            #cmd = bytearray(b'')
+            #cmd.append(255)
+            #cmd.append(0)
+            #cmd.append(0)
+            self.serial_device_b.write(cmd)
+            self.serial_device_b.close()
         except:
             pass
 
